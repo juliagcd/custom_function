@@ -1,0 +1,80 @@
+---
+title: "Grouped Summary Function Demo"
+author: "Julia Gómez-Coronado"
+format: pdf
+editor: visual
+---
+
+## Purpose of the Function
+
+This project demonstrates a custom R function called `grouped_summary()`.
+
+The function summarizes a numeric variable across groups within a dataset. It returns the variable name, number of observations, number and percentage of missing values, and descriptive statistics including the mean, median, standard deviation, minimum, and maximum.
+
+This function is useful for exploratory data analysis because it allows the user to compare data quality and variable patterns across categories or repeated time periods in one clear table.
+
+## Setup
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(knitr)
+```
+
+## Load Data
+
+This demo uses R's built-in `airquality` dataset, which contains daily air quality measurements in New York from May to September 1973.
+
+```{r}
+data("airquality")
+
+names(airquality)
+str(airquality)
+```
+
+## Custom Function
+
+```{r}
+grouped_summary <- function(x, group, var_name) {
+  tibble(
+    Month = group,
+    Value = x
+  ) |>
+    group_by(Month) |>
+    summarise(
+      Variable = var_name,
+      Observations = n(),
+      Missing = sum(is.na(Value)),
+      Missing_Pct = round(sum(is.na(Value)) / n() * 100, 1),
+      Mean = round(mean(Value, na.rm = TRUE), 1),
+      Median = round(median(Value, na.rm = TRUE), 1),
+      SD = round(sd(Value, na.rm = TRUE), 1),
+      Min = min(Value, na.rm = TRUE),
+      Max = max(Value, na.rm = TRUE),
+      Check = ifelse(sum(is.na(Value)) > 0, "Missing values", "Complete"),
+      .groups = "drop"
+    )
+}
+```
+
+## Function Output
+
+I applied `grouped_summary()` to three numeric variables in the `airquality` dataset: `Ozone`, `Solar.R`, and `Temp`. Each variable is summarized by month.
+
+```{r}
+air_quality <- bind_rows(
+  grouped_summary(airquality$Ozone, airquality$Month, "Ozone"),
+  grouped_summary(airquality$Solar.R, airquality$Month, "Solar.R"),
+  grouped_summary(airquality$Temp, airquality$Month, "Temp")
+)
+
+kable(air_quality)
+```
+
+## Interpretation
+
+The output shows monthly observations, missing values, percentage of missing values, and descriptive statistics for each variable. For example, `Ozone` has missing values in several months, while `Temp` is complete across all months.
+
+The function makes it easier to compare both data quality and variable patterns across repeated time periods. This is useful before deeper analysis because missingness and distributional differences can affect interpretation, model quality, and visualization choices.
